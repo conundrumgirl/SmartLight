@@ -60,7 +60,19 @@ int bluePin = D0;
 int potPin = A0;
 int photoPin = A1;
 
-float g_photoValue;
+volatile float g_photoValue;
+const int DEBOUNCE_DELAY = 200; //in milliseconds
+//smoothing
+const int SMOOTHING_WINDOW_SIZE = 10;
+volatile int _readings[SMOOTHING_WINDOW_SIZE];      // the readings from the analog input
+volatile int _readIndex = 0;              // the index of the current reading
+volatile int _total = 0;                  // the running total
+volatile int _average = 0;                // the average
+
+
+volatile bool isBlu = false;
+
+
 
 /**
    @brief Callback for writing event.
@@ -106,8 +118,14 @@ int bleWriteCallback(uint16_t value_handle, uint8_t *buffer, uint16_t size)
      * TODO: Receive the data sent from other BLE-abled devices (e.g., Android app)
      * and process the data for different purposes (digital write, digital read, analog read, PWM write)
      */
-    if (receive_data[0] == 0x02)
-    { // Command is to control PWM pin
+    if (receive_data[0] == 0x02)  { // Command is to control PWM pin
+
+    isBlu = true;
+
+    Serial.println(receive_data[2]);
+    Serial.println((int)receive_data[2]);
+    Serial.println((int)receive_data[2] & 0xFF);
+
       int data = 255 - (receive_data[2] & 0xFF);
 
       if (receive_data[1] == 0x00)
@@ -186,15 +204,24 @@ void setup()
 
   pinMode(potPin, INPUT);   //set potentiometer for red LED as input
   pinMode(photoPin, INPUT); //set potentiometer for green LED as input
+
+  //smoothing
+  for (int i = 0; i < SMOOTHING_WINDOW_SIZE; i++) {
+    _readings[i] = 0;
+  }
 }
 
 void loop()
 {
 
   g_photoValue = getAdjustedPhotoValue(analogRead(photoPin));
-
-  doColorLoop(potPin);
-  delay(200);
+  delay(DEBOUNCE_DELAY);
+  if(isBlu == false) {
+    doColorLoop(potPin);
+  } else {
+    Serial.print("controlFromPhone");
+  }
+  //delay(200);
 }
 
 /* Color setting aux functions*/
@@ -208,9 +235,37 @@ float getAdjustedPhotoValue(int rawPhotoValue)
   return newPhotoValue;
 }
 
+int getSmoothedPotReading(int curReading) {
+  _total = _total - _readings[_readIndex];
+
+  _readings[_readIndex] = curReading;
+
+  // add the reading to the total
+  _total = _total + _readings[_readIndex];
+
+  // advance to the next position in the array
+  _readIndex = _readIndex + 1;
+
+  // if we're at the end of the array...
+  if (_readIndex >= SMOOTHING_WINDOW_SIZE) {
+    // ...wrap around to the beginning:
+    _readIndex = 0;
+  }
+
+  // calculate the average
+  _average = _total / SMOOTHING_WINDOW_SIZE;
+
+  // send it to the computer as ASCII digits
+  Serial.print(curReading);
+  Serial.print(",");
+  Serial.println(_average);
+  return _average;
+}
+
 void doColorLoop(int _potPin)
 {
   int potValue = analogRead(_potPin);
+  potValue = getSmoothedPotReading(potValue);
   printDebug(potValue, "pot value");
   getColorFromPotentiometer(potValue);
 }
