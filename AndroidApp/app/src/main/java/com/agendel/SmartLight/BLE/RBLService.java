@@ -1,4 +1,4 @@
-package com.agendel.SmartLight.SmartLight.BLE;
+package com.agendel.SmartLight.BLE;
 
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
@@ -40,6 +41,8 @@ public class RBLService extends Service{
 
     public final static UUID UUID_BLE_SHIELD_TX = UUID
             .fromString(RBLGattAttributes.BLE_SHIELD_TX);
+    public final static UUID UUID_BLE_SHIELD_RX = UUID
+            .fromString(RBLGattAttributes.BLE_SHIELD_RX);
     public final static UUID UUID_BLE_SHIELD_SERVICE = UUID
             .fromString(RBLGattAttributes.BLE_SHIELD_SERVICE);
 
@@ -108,6 +111,18 @@ public class RBLService extends Service{
 
     private void broadcastUpdate(final String action,
                                  final BluetoothGattCharacteristic characteristic) {
+        final Intent intent = new Intent(action);
+
+        // This is special handling for the Heart Rate Measurement profile. Data
+        // parsing is
+        // carried out as per profile specifications:
+        // http://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.heart_rate_measurement.xml
+        if (UUID_BLE_SHIELD_RX.equals(characteristic.getUuid())) {
+            final byte[] rx = characteristic.getValue();
+            intent.putExtra(EXTRA_DATA, rx);
+        }
+
+        sendBroadcast(intent);
     }
 
     public class LocalBinder extends Binder {
@@ -286,6 +301,14 @@ public class RBLService extends Service{
         }
         mBluetoothGatt.setCharacteristicNotification(characteristic, enabled);
 
+        if (UUID_BLE_SHIELD_RX.equals(characteristic.getUuid())) {
+            BluetoothGattDescriptor descriptor = characteristic
+                    .getDescriptor(UUID
+                            .fromString(RBLGattAttributes.CLIENT_CHARACTERISTIC_CONFIG));
+            descriptor
+                    .setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+            mBluetoothGatt.writeDescriptor(descriptor);
+        }
     }
 
     public BluetoothGattService getSupportedGattService() {

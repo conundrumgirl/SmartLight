@@ -19,9 +19,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+
+import android.hardware.SensorManager;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -31,8 +34,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
-import com.agendel.SmartLight.SmartLight.BLE.RBLGattAttributes;
-import com.agendel.SmartLight.SmartLight.BLE.RBLService;
+import com.agendel.SmartLight.BLE.RBLGattAttributes;
+import com.agendel.SmartLight.BLE.RBLService;
 import com.skydoves.colorpickerpreference.ColorEnvelope;
 import com.skydoves.colorpickerpreference.ColorListener;
 import com.skydoves.colorpickerpreference.ColorPickerView;
@@ -41,13 +44,14 @@ import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
+
 public class MainActivity extends AppCompatActivity {
     // Define the device name and the length of the name
     // Note the device name and the length should be consistent with the ones defined in the Duo sketch
     private String mTargetDeviceName = "ALINa";
     private int mNameLen = 0x06;
 
-    private final static String TAG = MainActivity.class.getSimpleName();
+    private final static String TAG = MainActivity_b.class.getSimpleName();
 
     // Declare all variables associated with the UI components
     private Button mConnectBtn = null;
@@ -65,6 +69,12 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothDevice mDevice = null;
     private String mDeviceAddress;
+
+    //shake
+    private SensorManager mSensorManager;
+    private Sensor mAccelerometer;
+    private ShakeDetector mShakeDetector;
+
 
     private boolean flag = true;
     private boolean mConnState = false;
@@ -96,6 +106,20 @@ public class MainActivity extends AppCompatActivity {
             mBluetoothLeService = null;
         }
     };
+
+    private void handleShakeEvent() {
+
+        byte buf[] = new byte[] { (byte) 0x05, (byte) 0x00, (byte) 0x00};
+
+
+
+            Log.e(TAG, String.valueOf((int)buf[0]) +"=" + String.valueOf((int)buf[1])+"=" +String.valueOf((int)buf[2]));
+            if (mCharacteristicTx != null) {
+                mCharacteristicTx.setValue(buf);
+                mBluetoothLeService.writeCharacteristic(mCharacteristicTx);
+            }
+
+    }
 
     private void setButtonDisable() {
         flag = false;
@@ -203,10 +227,10 @@ public class MainActivity extends AppCompatActivity {
                              final byte[] scanRecord) {
 
             runOnUiThread(new Runnable() {
-				@Override
-				public void run() {
-					byte[] serviceUuidBytes = new byte[16];
-					String serviceUuid = "";
+                @Override
+                public void run() {
+                    byte[] serviceUuidBytes = new byte[16];
+                    String serviceUuid = "";
                     for (int i = (21+mNameLen), j = 0; i >= (6+mNameLen); i--, j++) {
                         serviceUuidBytes[j] = scanRecord[i];
                     }
@@ -214,16 +238,16 @@ public class MainActivity extends AppCompatActivity {
                      * This is where you can test if the received UUID matches the defined UUID in the Arduino
                      * Sketch and uploaded to the Duo board: 0x713d0000503e4c75ba943148f18d941e.
                      */
-					serviceUuid = bytesToHex(serviceUuidBytes);
-					if (stringToUuidString(serviceUuid).equals(
-							RBLGattAttributes.BLE_SHIELD_SERVICE
-									.toUpperCase(Locale.ENGLISH)) && device.getName().equals(mTargetDeviceName)) {
-						mDevice = device;
-						mBluetoothDeviceName = mDevice.getName();
-						mBluetoothDeviceUUID = serviceUuid;
-					}
-				}
-			});
+                    serviceUuid = bytesToHex(serviceUuidBytes);
+                    if (stringToUuidString(serviceUuid).equals(
+                            RBLGattAttributes.BLE_SHIELD_SERVICE
+                                    .toUpperCase(Locale.ENGLISH)) && device.getName().equals(mTargetDeviceName)) {
+                        mDevice = device;
+                        mBluetoothDeviceName = mDevice.getName();
+                        mBluetoothDeviceUUID = serviceUuid;
+                    }
+                }
+            });
         }
     };
 
@@ -261,6 +285,26 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // ShakeDetector initialization
+        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        mAccelerometer = mSensorManager
+                .getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        mShakeDetector = new ShakeDetector();
+        mShakeDetector.setOnShakeListener(new ShakeDetector.OnShakeListener() {
+
+            @Override
+            public void onShake(int count) {
+                /*
+                 * The following method, "handleShakeEvent(count):" is a stub //
+                 * method you would use to setup whatever you want done once the
+                 * device has been shook.
+                 */
+                handleShakeEvent();
+            }
+        });
+
+
+
         // Associate all UI components with variables
         mConnectBtn = (Button) findViewById(R.id.connectBtn);
         mDeviceName = (TextView) findViewById(R.id.deviceName);
@@ -288,7 +332,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                     i = i +1;
 
-                    }
+                }
 
 
             }
@@ -397,6 +441,11 @@ public class MainActivity extends AppCompatActivity {
 
         registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
 
+        super.onResume();
+
+        mSensorManager.registerListener(mShakeDetector, mAccelerometer,	SensorManager.SENSOR_DELAY_UI);
+
+
     }
 
     @Override
@@ -407,6 +456,13 @@ public class MainActivity extends AppCompatActivity {
 
         unregisterReceiver(mGattUpdateReceiver);
     }
+    @Override
+    public void onPause() {
+        // Add the following line to unregister the Sensor Manager onPause
+        mSensorManager.unregisterListener(mShakeDetector);
+        super.onPause();
+    }
+
 
     @Override
     protected void onDestroy() {
@@ -440,4 +496,6 @@ public class MainActivity extends AppCompatActivity {
 
         super.onActivityResult(requestCode, resultCode, data);
     }
-}
+
+    }
+

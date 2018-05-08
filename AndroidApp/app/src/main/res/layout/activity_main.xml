@@ -6,7 +6,7 @@
     android:layout_height="fill_parent"
     android:background="#FFF"
     android:orientation="vertical"
-    tools:context="com.agendel.SmartLight.SmartLight.MainActivity">
+    tools:context="com.agendel.SmartLight.MainActivity">
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -138,6 +138,17 @@
                 android:layout_marginRight="20dp"
                 android:text="Digital Out (write)"
                 android:textColor="#000000" />
+
+
+            <TextView
+                android:id="@+id/ananlogIn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="20dp"
+                android:text="Analog In (read)"
+                android:textColor="#000000" />
+
 
             <TextView
                 android:layout_width="wrap_content"
