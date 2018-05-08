@@ -19,6 +19,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.hardware.Sensor;
 
 import android.hardware.SensorManager;
@@ -33,12 +34,20 @@ import android.widget.CompoundButton;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
+import com.rtugeek.android.colorseekbar.ColorSeekBar;
 
 import com.agendel.SmartLight.BLE.RBLGattAttributes;
 import com.agendel.SmartLight.BLE.RBLService;
+
+
+
+
+
+
 import com.skydoves.colorpickerpreference.ColorEnvelope;
 import com.skydoves.colorpickerpreference.ColorListener;
 import com.skydoves.colorpickerpreference.ColorPickerView;
+//import com.rtugeek.android.colorseekbar.ColorSeekBar;
 
 import java.util.Locale;
 import java.util.Timer;
@@ -57,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
     private Button mConnectBtn = null;
     private TextView mDeviceName = null;
     private TextView mRssiValue = null;
+    private TextView mAnalogInValue = null;
     private TextView mUUID = null;
     private ToggleButton mDigitalOutBtn;
     private String mBluetoothDeviceName = "";
@@ -82,7 +92,10 @@ public class MainActivity extends AppCompatActivity {
 
     private byte[] mData = new byte[3];
     private static final int REQUEST_ENABLE_BT = 1;
-    private static final long SCAN_PERIOD = 1000;   // millis
+    private static final long SCAN_PERIOD = 2000;   // millis
+
+    //color feedback
+    private int[] color = {0,0,0};
 
     final private static char[] hexArray = { '0', '1', '2', '3', '4', '5', '6',
             '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
@@ -154,7 +167,13 @@ public class MainActivity extends AppCompatActivity {
                         Toast.LENGTH_SHORT).show();
 
                 getGattService(mBluetoothLeService.getSupportedGattService());
-            } else if (RBLService.ACTION_GATT_RSSI.equals(action)) {
+            } else if (RBLService.ACTION_DATA_AVAILABLE.equals(action)) {
+                mData = intent.getByteArrayExtra(RBLService.EXTRA_DATA);
+
+                readAnalogInValue(mData);
+            }
+
+            else if (RBLService.ACTION_GATT_RSSI.equals(action)) {
                 displayData(intent.getStringExtra(RBLService.EXTRA_DATA));
             }
         }
@@ -168,6 +187,35 @@ public class MainActivity extends AppCompatActivity {
             mUUID.setText(mBluetoothDeviceUUID);
         }
     }
+    // Display the received Analog/Digital read on the interface
+    private void readAnalogInValue(byte[] data) {
+       //for (int i = 0; i < data.length; i += 3) {
+            //if (data[i] == 0x0B) {
+               /* int Value;
+
+                Value = ((data[i + 1] << 8) & 0x0000ff00)
+                        | (data[i + 2] & 0x000000ff);
+
+                mAnalogInValue.setText(Value + "");*/
+
+           // }
+        //}
+        int byteData = (data[1] & 0xFF);
+        int colorIndex = (int)data[0];
+
+        color[colorIndex] = byteData;
+        mAnalogInValue.setTextColor(Color.rgb(color[0], color[1], color[2]));
+
+        mAnalogInValue.setText("The light color: " + Integer.toHexString(color[0])+ Integer.toHexString(color[1]) + Integer.toHexString(color[2]));
+        //ColorSeekBar colorSeekBar =findViewById(R.id.colorSlider);
+
+        //int x = Color.rgb(color[0], color[1], color[2]);
+        //colorSeekBar.setColor(x);
+
+        Log.e(TAG, String.valueOf((int)data[0] + " value" + String.valueOf(byteData )));
+
+    }
+
 
 
     // Get Gatt service information for setting up the communication
@@ -180,6 +228,12 @@ public class MainActivity extends AppCompatActivity {
 
         mCharacteristicTx = gattService
                 .getCharacteristic(RBLService.UUID_BLE_SHIELD_TX);
+
+        BluetoothGattCharacteristic characteristicRx = gattService
+                .getCharacteristic(RBLService.UUID_BLE_SHIELD_RX);
+        mBluetoothLeService.setCharacteristicNotification(characteristicRx,
+                true);
+        mBluetoothLeService.readCharacteristic(characteristicRx);
     }
 
     // Start a thread to read RSSI from the board
@@ -293,12 +347,8 @@ public class MainActivity extends AppCompatActivity {
         mShakeDetector.setOnShakeListener(new ShakeDetector.OnShakeListener() {
 
             @Override
-            public void onShake(int count) {
-                /*
-                 * The following method, "handleShakeEvent(count):" is a stub //
-                 * method you would use to setup whatever you want done once the
-                 * device has been shook.
-                 */
+            public void onShake() {
+
                 handleShakeEvent();
             }
         });
@@ -311,8 +361,39 @@ public class MainActivity extends AppCompatActivity {
         mRssiValue = (TextView) findViewById(R.id.rssiValue);
         mDigitalOutBtn = (ToggleButton) findViewById(R.id.DOutBtn);
         mUUID = (TextView) findViewById(R.id.uuidValue);
+        mAnalogInValue = (TextView) findViewById(R.id.ananlogIn);
 
         ColorPickerView colorPickerView =findViewById(R.id.colorPickerView);
+
+
+
+        /*com.rtugeek.android.colorseekbar.ColorSeekBar colorSeekBar =findViewById(R.id.colorSlider);
+        colorSeekBar.setOnColorChangeListener(new com.rtugeek.android.colorseekbar.ColorSeekBar.OnColorChangeListener() {
+            @Override
+            public void onColorChangeListener(int colorBarPosition, int alphaBarPosition, int color) {
+
+                int[] result = { Color.red(color), Color.green(color), Color.blue(color)};
+
+
+                byte buf[] = new byte[] { (byte) 0x02, (byte) 0x00, (byte) 0x00};
+                for (int i = 0; i < 3;) {
+                    Log.e(TAG, "Unable to initialize Bluetooth");
+                    buf[1]= (byte)i;
+                    buf[2] = (byte)result[i];
+                    Log.e(TAG, String.valueOf((int)buf[0]) +"=" + String.valueOf((int)buf[1])+"=" +String.valueOf((int)buf[2]));
+                    if (mCharacteristicTx != null) {
+                        mCharacteristicTx.setValue(buf);
+                        mBluetoothLeService.writeCharacteristic(mCharacteristicTx);
+                    }
+                    i = i +1;
+
+                }
+            }
+        });*/
+
+
+
+
         colorPickerView.setColorListener(new ColorListener() {
             @Override
             public void onColorSelected(ColorEnvelope colorEnvelope) {

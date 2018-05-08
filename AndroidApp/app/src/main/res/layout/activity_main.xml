@@ -130,14 +130,7 @@
             android:layout_height="match_parent"
             android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/digitalOut"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="20dp"
-                android:layout_marginRight="20dp"
-                android:text="Digital Out (write)"
-                android:textColor="#000000" />
+
 
 
             <TextView
@@ -146,17 +139,14 @@
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="20dp"
                 android:layout_marginRight="20dp"
+
                 android:text="Analog In (read)"
-                android:textColor="#000000" />
+                android:textColor="#000000"
+                android:textSize="18sp"
+                android:textStyle="bold" />
 
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginRight="20dp"
-                android:layout_weight="1"
-                android:text="@string/digital_write"
-                android:textColor="@android:color/holo_blue_dark" />
+
 
             <ToggleButton
                 android:id="@+id/DOutBtn"
@@ -190,5 +180,13 @@
             app:layout_constraintStart_toStartOf="parent"
             app:palette="@drawable/palette"
             app:selector="@drawable/wheel" />
+
+
+        <com.rtugeek.android.colorseekbar.ColorSeekBar
+            android:id="@+id/colorSlider"
+            android:layout_width="match_parent"
+            app:colorSeeds="@array/material_colors"
+            app:barHeight = "1dp"
+            android:layout_height="wrap_content" />
     </android.support.constraint.ConstraintLayout>
 </LinearLayout>

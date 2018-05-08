@@ -382,7 +382,7 @@ void send(int pin, int c)
     pinByte = 0x02;
 
   send_data[0] = (pinByte);
-  send_data[1] = c >> 8;
+  send_data[1] = byte(c);
   send_data[2] = 0x03;
   //analogWrite(PWM_PIN, value);
 

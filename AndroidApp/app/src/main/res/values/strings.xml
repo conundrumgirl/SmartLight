@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">PinControlDemo_Android</string>
+    <string name="app_name">Smart Light</string>
     <string name="digital_write">pin D0</string>
     <string name="digital_read">pin D4</string>
     <string name="analog_read">pin A5</string>
