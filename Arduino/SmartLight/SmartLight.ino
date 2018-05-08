@@ -1,9 +1,9 @@
 #include "ble_config.h"
 
 /*
-   Simple Bluetooth Demo
-   This code shows that the user can send simple digital write data from the
-   Android app to the Duo board.
+   This is based on Simple Bluetooth Demo from Liang
+   I have added a 2-way communication (also per Liang's example) + lights management
+
    Created by Liang He, April 27th, 2018
 
    The Library is created based on Bjorn's code for RedBear BLE communication:
@@ -55,10 +55,7 @@ static uint16_t send_handle = 0x0000;    // send
 static uint8_t receive_data[RECEIVE_MAX_LEN] = {0x01};
 static uint8_t send_data[SEND_MAX_LEN] = {0x00};
 
-/* alina color setup
-
-*/
-
+/* Pins setup */
 int redPin = D2;
 int greenPin = D1;
 int bluePin = D0;
@@ -66,16 +63,16 @@ int bluePin = D0;
 int potPin = A0;
 int photoPin = A1;
 
+// gloabls for read-in values
 volatile float g_photoValue;
 volatile int g_potValue;
 
-//color values form phone
-
+//processed color values form phone
 volatile int phoneRed;
 volatile int phoneGreen;
 volatile int phoneBlue;
 
-
+//color values from  potentiometer
 volatile int potRed;
 volatile int potGreen;
 volatile int potBlue;
@@ -88,14 +85,7 @@ volatile int _readIndex = 0;                   // the index of the current readi
 volatile int _total = 0;                       // the running total
 volatile int _average = 0;
 
-volatile int _oldReading = 0; // the average
-
-volatile bool isBlu = false;
-
-// Mark whether need to notify analog value to client.
-static boolean analog_enabled = false;
-
-void toggleIsBlu(void);
+volatile int _oldReading = 0; // the average - used to check if we are reading phone or potentiometer
 
 /**
    @brief Callback for writing event.
@@ -122,69 +112,33 @@ int bleWriteCallback(uint16_t value_handle, uint8_t *buffer, uint16_t size)
     }
     Serial.println(" ");
 
-    /* Process the data
-       TODO: Receive the data sent from other BLE-abled devices (e.g., Android app)
-       and process the data for different purposes (digital write, digital read, analog read, PWM write)
-    */
-    //digital
-    /*if (receive_data[0] == 0x01) { // Command is to control digital out pin
-      if (receive_data[1] == 0x01)
-        digitalWrite(DIGITAL_OUT_PIN, HIGH);
-      else
-        digitalWrite(DIGITAL_OUT_PIN, LOW);
-    }
-    else if (receive_data[0] == 0x04) { // Command is to initialize all.
-      digitalWrite(DIGITAL_OUT_PIN, LOW);
-    }*/
-
-    /* Process the data
-     * TODO: Receive the data sent from other BLE-abled devices (e.g., Android app)
-     * and process the data for different purposes (digital write, digital read, analog read, PWM write)
-     */
     if (receive_data[0] == 0x02)
-    { // Command is to control PWM pin
-
-      isBlu = true;
-
+    {
       Serial.println(receive_data[2]);
       Serial.println((int)receive_data[2]);
       Serial.println((int)receive_data[2] & 0xFF);
-
-      //int data = 255 - (receive_data[2] & 0xFF);
       int data = receive_data[2] & 0xFF;
 
-      if (receive_data[1] == 0x00) { // Command is to control PWM pin
-        //printDebug(data, "red value");
-        //analogWrite(redPin, data);
+      if (receive_data[1] == 0x00) { // red
         phoneRed = data;
       }
-
-      else if (receive_data[1] == 0x01) { // Command is to control PWM pin
+      else if (receive_data[1] == 0x01) { // green
         phoneGreen = data;
-        //printDebug(data, "green value");
-        // analogWrite(greenPin, data);
       }
 
-      else if (receive_data[1] == 0x02) { // Command is to control PWM pin
-        //printDebug(data, "blue value");
+      else if (receive_data[1] == 0x02) { // blue
         phoneBlue = data;
-        //analogWrite(bluePin, data);
       }
-
-      //Serial.println(newPhotoValue);
-      // analogWrite(redPin, 255-(receive_data[1]& 0xFF));
-      //analogWrite(greenPin, 255-(receive_data[2]& 0xFF));
-      //analogWrite(bluePin, 255-(receive_data[3]& 0xFF));
     }
     else if (receive_data[0] == 0x04)
     { // Command is to initialize all.
-      analogWrite(redPin, 255);
-      analogWrite(greenPin, 255);
-      analogWrite(bluePin, 255);
+        phoneRed = 255;
+        phoneGreen = 255;
+        phoneBlue = 255;
     }
 
     else if (receive_data[0] == 0x05)
-    { // Command is to initialize all.
+    {
       Serial.print("shake");
       analogWrite(redPin, 0);
       analogWrite(greenPin, 255);
@@ -197,8 +151,6 @@ int bleWriteCallback(uint16_t value_handle, uint8_t *buffer, uint16_t size)
 void printDebug(int number, char message[])
 {
   Serial.print(message);
-  //strcpy(message, "Hello, world!")
-  //printf("%s\n", message);
   Serial.println(number);
 }
 
@@ -255,20 +207,6 @@ void setup()
 
 void loop()
 {
-
-  /* g_photoValue = getAdjustedPhotoValue(analogRead(photoPin));
-  g_potValue = getSmoothedPotReading(analogRead(potPin));
-  if (abs(_oldReading - g_potValue) > POT_CHANGE_THRESHOLD )
-  {
-    _oldReading =  g_potValue;
-    //printDebug(g_potValue, "pot value change");
-    getColorFromPotentiometer(g_potValue);
-  }
-  /*else
-  {
-    Serial.print("controlFromPhone");
-  }*/
-  //delay(200);*/
 }
 
 /* Color setting aux functions*/
@@ -282,42 +220,30 @@ float getAdjustedPhotoValue(int rawPhotoValue)
   return newPhotoValue;
 }
 
+/* From Jon's example */
 int getSmoothedPotReading(int curReading)
 {
   _total = _total - _readings[_readIndex];
-
   _readings[_readIndex] = curReading;
-
-  // add the reading to the total
   _total = _total + _readings[_readIndex];
-
-  // advance to the next position in the array
   _readIndex = _readIndex + 1;
-
   // if we're at the end of the array...
   if (_readIndex >= SMOOTHING_WINDOW_SIZE)
   {
-    // ...wrap around to the beginning:
     _readIndex = 0;
   }
 
-  // calculate the average
   _average = _total / SMOOTHING_WINDOW_SIZE;
-
-  // send it to the computer as ASCII digits
-  //Serial.print(curReading);
-  //Serial.print(",");
-  //Serial.println(_average);
   return _average;
 }
 
+/* maps potentiometer values and stores them */
 void getColorFromPotentiometer(int potValue)
 {
 
   if (potValue < 1364) // Lowest third of the potentiometer's range (0-340)
   {
     potValue = map(potValue, 0, 1363, 0, 255);
-    //setColor(256 - potValue, potValue, 1);
     potRed = 256 - potValue;
     potGreen = potValue;
     potBlue = 1;
@@ -325,7 +251,6 @@ void getColorFromPotentiometer(int potValue)
   else if (potValue < 2728) // Middle third of potentiometer's range (341-681)
   {
     potValue = map(potValue, 1364, 2727, 0, 255); // Normalize to 0-255
-    //setColor(1, 256 - potValue, potValue);
     potRed = 1;
     potGreen = 256 - potValue;
     potBlue = potValue;
@@ -333,7 +258,6 @@ void getColorFromPotentiometer(int potValue)
   else // Upper third of potentiometer"s range (682-1023)
   {
     potValue = map(potValue, 2728, 4092, 0, 255); // Normalize to 0-255
-    //setColor(potValue, 1, 256 - potValue);
     potRed  = potValue;
     potGreen = 1;
     potBlue = 256 - potValue;;
@@ -345,7 +269,6 @@ void getColorFromPotentiometer(int potValue)
 
 void setColor(int r, int g, int b, bool isSend)
 {
-
   setColorIndividual(redPin, r, isSend);
   setColorIndividual(greenPin, g, isSend);
   setColorIndividual(bluePin, b, isSend);
@@ -354,24 +277,14 @@ void setColor(int r, int g, int b, bool isSend)
 void setColorIndividual(int pin, int color, bool isSend)
 {
   int colorAdjusted = (int)color * g_photoValue;
-  //Serial.print("photo");
-  //Serial.println(g_photoValue);
   int writeValue_color = 255 - colorAdjusted;
   if (isSend){
-  send(pin, color);
+    send(pin, color);
   }
   analogWrite(pin, writeValue_color);
 }
 
-/**
- * @brief Timer task for sending status change to client.
- * @param[in]  *ts
- * @retval None
- *
- * TODO: Send the data from either analog read or digital read back to
- * the other BLE-abled devices
- */
-
+/* send data back to android */
 void send(int pin, int c)
 {
 
@@ -380,18 +293,17 @@ void send(int pin, int c)
     pinByte = 0x01;
   else if (pin == bluePin)
     pinByte = 0x02;
-
   send_data[0] = (pinByte);
   send_data[1] = byte(c);
   send_data[2] = 0x03;
-  //analogWrite(PWM_PIN, value);
 
   if (ble.attServerCanSendPacket())
     ble.sendNotify(send_handle, send_data, SEND_MAX_LEN);
 }
+
+//this is our loop
 static void send_notify(btstack_timer_source_t *ts)
 {
-
   g_photoValue = getAdjustedPhotoValue(analogRead(photoPin));
   g_potValue = getSmoothedPotReading(analogRead(potPin));
   if (abs(_oldReading - g_potValue) > POT_CHANGE_THRESHOLD)
@@ -400,23 +312,12 @@ static void send_notify(btstack_timer_source_t *ts)
     printDebug(g_potValue, "pot value change");
     getColorFromPotentiometer(g_potValue);
     setColor(potRed, potGreen, potBlue, true);
-
-    //int value = map(analogRead(g_potValue), 0, 4096, 0, 255);
-
-    /*send_data[0] = (0x0B);
-    send_data[1] = (value >> 8);
-    send_data[2] = (value);
-    //analogWrite(PWM_PIN, value);
-
-    if (ble.attServerCanSendPacket())
-      ble.sendNotify(send_handle, send_data, SEND_MAX_LEN);*/
   }
   else
   {
     setColor(phoneRed, phoneGreen, phoneBlue, false);
   }
 
-  // Restart timer.
   ble.setTimer(ts, 200);
   ble.addTimer(ts);
 }

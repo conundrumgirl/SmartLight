@@ -3,7 +3,7 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 26
     defaultConfig {
-        applicationId "com.example.lianghe.pincontroldemo_android"
+        applicationId "com.agendel.smart_light"
         minSdkVersion 18
         // Set the target SDK version to 19 since we built our skeleton code based on RedBear provided code
         targetSdkVersion 19

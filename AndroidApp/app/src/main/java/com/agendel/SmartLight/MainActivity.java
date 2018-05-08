@@ -56,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
     private String mTargetDeviceName = "ALINa";
     private int mNameLen = 0x06;
 
-    private final static String TAG = MainActivity_b.class.getSimpleName();
+    private final static String TAG = MainActivity.class.getSimpleName();
 
     // Declare all variables associated with the UI components
     private Button mConnectBtn = null;
@@ -92,10 +92,10 @@ public class MainActivity extends AppCompatActivity {
     private static final long SCAN_PERIOD = 2000;   // millis
 
     //color feedback
-    private int[] color = {0,0,0};
+    private int[] color = {0, 0, 0};
 
-    final private static char[] hexArray = { '0', '1', '2', '3', '4', '5', '6',
-            '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+    final private static char[] hexArray = {'0', '1', '2', '3', '4', '5', '6',
+            '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
     // Process service connection. Created by the RedBear Team
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -119,34 +119,28 @@ public class MainActivity extends AppCompatActivity {
 
     private void handleShakeEvent() {
 
-        byte buf[] = new byte[] { (byte) 0x05, (byte) 0x00, (byte) 0x00};
-
-
-            Log.e(TAG, String.valueOf((int)buf[0]) +"=" + String.valueOf((int)buf[1])+"=" +String.valueOf((int)buf[2]));
-            if (mCharacteristicTx != null) {
-                mCharacteristicTx.setValue(buf);
-                mBluetoothLeService.writeCharacteristic(mCharacteristicTx);
-            }
+        byte buf[] = new byte[]{(byte) 0x05, (byte) 0x00, (byte) 0x00};
+        Log.e(TAG, String.valueOf((int) buf[0]) + "=" + String.valueOf((int) buf[1]) + "=" + String.valueOf((int) buf[2]));
+        if (mCharacteristicTx != null) {
+            mCharacteristicTx.setValue(buf);
+            mBluetoothLeService.writeCharacteristic(mCharacteristicTx);
+        }
 
     }
 
     private void sendColor(int[] color) {
-        byte buf[] = new byte[] { (byte) 0x02, (byte) 0x00, (byte) 0x00};
-        for (int i = 0; i < 3;) {
-            Log.e(TAG, "Unable to initialize Bluetooth");
-            buf[1]= (byte)i;
-            buf[2] = (byte)color[i];
-            Log.e(TAG, String.valueOf((int)buf[0]) +"=" + String.valueOf((int)buf[1])+"=" +String.valueOf((int)buf[2]));
+        byte buf[] = new byte[]{(byte) 0x02, (byte) 0x00, (byte) 0x00};
+        for (int i = 0; i < 3; ) {
+            buf[1] = (byte) i;
+            buf[2] = (byte) color[i];
+            Log.e(TAG, String.valueOf((int) buf[0]) + "=" + String.valueOf((int) buf[1]) + "=" + String.valueOf((int) buf[2]));
             if (mCharacteristicTx != null) {
                 mCharacteristicTx.setValue(buf);
                 mBluetoothLeService.writeCharacteristic(mCharacteristicTx);
             }
-            i = i +1;
-
+            i = i + 1;
         }
         setOutTextColor(color);
-
-
     }
 
     private void setButtonDisable() {
@@ -186,9 +180,7 @@ public class MainActivity extends AppCompatActivity {
                 mData = intent.getByteArrayExtra(RBLService.EXTRA_DATA);
 
                 readAnalogInValue(mData);
-            }
-
-            else if (RBLService.ACTION_GATT_RSSI.equals(action)) {
+            } else if (RBLService.ACTION_GATT_RSSI.equals(action)) {
                 displayData(intent.getStringExtra(RBLService.EXTRA_DATA));
             }
         }
@@ -202,39 +194,34 @@ public class MainActivity extends AppCompatActivity {
             mUUID.setText(mBluetoothDeviceUUID);
         }
     }
+
     // Display the received Analog/Digital read on the interface
     private void readAnalogInValue(byte[] data) {
         int byteData = (data[1] & 0xFF);
-        int colorIndex = (int)data[0];
+        int colorIndex = (int) data[0];
 
         color[colorIndex] = byteData;
-
-
-
-
-    setOutTextColor(color);
-
-
-
+        setOutTextColor(color);
     }
 
     private void setOutTextColor(int[] color) {
         String[] rgb = {"00", "00", "00"};
-        for (int i = 0; i < 3;) {
+        for (int i = 0; i < 3; ) {
             rgb[i] = Integer.toHexString(color[i]);
-            if(rgb[i].length()<2) {
-                rgb[i] = "0"+rgb[i];
+            if (rgb[i].length() < 2) {
+                rgb[i] = "0" + rgb[i];
             }
             i = i + 1;
         }
         mAnalogInValue.setTextColor(Color.rgb(color[0], color[1], color[2]));
-        mAnalogInValue.setText("The light color: " + rgb[0]+rgb[1]+rgb[2]);
+        mAnalogInValue.setText("The light color: " + rgb[0] + rgb[1] + rgb[2]);
     }
 
 
     private void setSpeed(boolean speed) {
         this.isSpeed = speed;
     }
+
     // Get Gatt service information for setting up the communication
     private void getGattService(BluetoothGattService gattService) {
         if (gattService == null)
@@ -266,7 +253,9 @@ public class MainActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
                 }
-            };
+            }
+
+            ;
         }.start();
     }
 
@@ -302,7 +291,7 @@ public class MainActivity extends AppCompatActivity {
                 public void run() {
                     byte[] serviceUuidBytes = new byte[16];
                     String serviceUuid = "";
-                    for (int i = (21+mNameLen), j = 0; i >= (6+mNameLen); i--, j++) {
+                    for (int i = (21 + mNameLen), j = 0; i >= (6 + mNameLen); i--, j++) {
                         serviceUuidBytes[j] = scanRecord[i];
                     }
                     /*
@@ -378,9 +367,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-
-
-
         // Associate all UI components with variables
         mConnectBtn = (Button) findViewById(R.id.connectBtn);
         mDeviceName = (TextView) findViewById(R.id.deviceName);
@@ -390,18 +376,15 @@ public class MainActivity extends AppCompatActivity {
         mAnalogInValue = (TextView) findViewById(R.id.ananlogIn);
         mAnalogInValue.setText("The light color: Unknown");
 
-        ColorPickerView colorPickerView =findViewById(R.id.colorPickerView);
+        ColorPickerView colorPickerView = findViewById(R.id.colorPickerView);
 
         colorPickerView.setColorListener(new ColorListener() {
             @Override
             public void onColorSelected(ColorEnvelope colorEnvelope) {
-
                 int[] result = colorEnvelope.getColorRGB();
-                if(!isSpeed) {
+                if (!isSpeed) {
                     sendColor(result);
                 }
-
-
 
             }
         });
@@ -458,20 +441,8 @@ public class MainActivity extends AppCompatActivity {
 
 
             @Override
-            public void onCheckedChanged(CompoundButton buttonView,
-                                         boolean isChecked) {
-               /* byte buf[] = new byte[] { (byte) 0x01, (byte) 0x00, (byte) 0x00 };
-
-                if (isChecked == true)
-                    buf[1] = 0x01;
-                else
-                    buf[1] = 0x00;
-
-                mCharacteristicTx.setValue(buf);
-                mBluetoothLeService.writeCharacteristic(mCharacteristicTx);*/
-
-                   setSpeed(isChecked);
-
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                setSpeed(isChecked);
             }
         });
 
@@ -514,7 +485,7 @@ public class MainActivity extends AppCompatActivity {
 
         super.onResume();
 
-        mSensorManager.registerListener(mShakeDetector, mAccelerometer,	SensorManager.SENSOR_DELAY_UI);
+        mSensorManager.registerListener(mShakeDetector, mAccelerometer, SensorManager.SENSOR_DELAY_UI);
 
 
     }
@@ -527,6 +498,7 @@ public class MainActivity extends AppCompatActivity {
 
         unregisterReceiver(mGattUpdateReceiver);
     }
+
     @Override
     public void onPause() {
         // Add the following line to unregister the Sensor Manager onPause
@@ -568,5 +540,5 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-    }
+}
 
