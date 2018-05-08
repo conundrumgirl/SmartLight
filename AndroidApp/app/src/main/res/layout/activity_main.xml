@@ -156,8 +156,8 @@
                 android:layout_marginRight="20dp"
                 android:checked="false"
                 android:enabled="false"
-                android:textOff="OFF"
-                android:textOn="ON" />
+                android:textOff="Color"
+                android:textOn="Speed" />
 
 
         </LinearLayout>

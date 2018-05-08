@@ -80,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
     private ShakeDetector mShakeDetector;
+    private boolean isSpeed = false;
 
 
     private boolean flag = true;
@@ -121,12 +122,30 @@ public class MainActivity extends AppCompatActivity {
         byte buf[] = new byte[] { (byte) 0x05, (byte) 0x00, (byte) 0x00};
 
 
-
             Log.e(TAG, String.valueOf((int)buf[0]) +"=" + String.valueOf((int)buf[1])+"=" +String.valueOf((int)buf[2]));
             if (mCharacteristicTx != null) {
                 mCharacteristicTx.setValue(buf);
                 mBluetoothLeService.writeCharacteristic(mCharacteristicTx);
             }
+
+    }
+
+    private void sendColor(int[] color) {
+        byte buf[] = new byte[] { (byte) 0x02, (byte) 0x00, (byte) 0x00};
+        for (int i = 0; i < 3;) {
+            Log.e(TAG, "Unable to initialize Bluetooth");
+            buf[1]= (byte)i;
+            buf[2] = (byte)color[i];
+            Log.e(TAG, String.valueOf((int)buf[0]) +"=" + String.valueOf((int)buf[1])+"=" +String.valueOf((int)buf[2]));
+            if (mCharacteristicTx != null) {
+                mCharacteristicTx.setValue(buf);
+                mBluetoothLeService.writeCharacteristic(mCharacteristicTx);
+            }
+            i = i +1;
+
+        }
+        setOutTextColor(color);
+
 
     }
 
@@ -185,41 +204,37 @@ public class MainActivity extends AppCompatActivity {
     }
     // Display the received Analog/Digital read on the interface
     private void readAnalogInValue(byte[] data) {
-       //for (int i = 0; i < data.length; i += 3) {
-            //if (data[i] == 0x0B) {
-               /* int Value;
-
-                Value = ((data[i + 1] << 8) & 0x0000ff00)
-                        | (data[i + 2] & 0x000000ff);
-
-                mAnalogInValue.setText(Value + "");*/
-
-           // }
-        //}
         int byteData = (data[1] & 0xFF);
         int colorIndex = (int)data[0];
 
         color[colorIndex] = byteData;
-        mAnalogInValue.setTextColor(Color.rgb(color[0], color[1], color[2]));
+
+
+
+
+    setOutTextColor(color);
+
+
+
+    }
+
+    private void setOutTextColor(int[] color) {
         String[] rgb = {"00", "00", "00"};
         for (int i = 0; i < 3;) {
             rgb[i] = Integer.toHexString(color[i]);
             if(rgb[i].length()<2) {
-            rgb[i] = "0"+rgb[i];
+                rgb[i] = "0"+rgb[i];
             }
             i = i + 1;
         }
-
-
+        mAnalogInValue.setTextColor(Color.rgb(color[0], color[1], color[2]));
         mAnalogInValue.setText("The light color: " + rgb[0]+rgb[1]+rgb[2]);
-
-
-        Log.e(TAG, String.valueOf((int)data[0] + " value" + String.valueOf(byteData )));
-
     }
 
 
-
+    private void setSpeed(boolean speed) {
+        this.isSpeed = speed;
+    }
     // Get Gatt service information for setting up the communication
     private void getGattService(BluetoothGattService gattService) {
         if (gattService == null)
@@ -353,7 +368,16 @@ public class MainActivity extends AppCompatActivity {
 
                 handleShakeEvent();
             }
+
+            @Override
+            public void onMove(int[] color) {
+                if (isSpeed) {
+                    sendColor(color);
+                }
+            }
         });
+
+
 
 
 
@@ -373,19 +397,10 @@ public class MainActivity extends AppCompatActivity {
             public void onColorSelected(ColorEnvelope colorEnvelope) {
 
                 int[] result = colorEnvelope.getColorRGB();
-                byte buf[] = new byte[] { (byte) 0x02, (byte) 0x00, (byte) 0x00};
-                for (int i = 0; i < 3;) {
-                    Log.e(TAG, "Unable to initialize Bluetooth");
-                    buf[1]= (byte)i;
-                    buf[2] = (byte)result[i];
-                    Log.e(TAG, String.valueOf((int)buf[0]) +"=" + String.valueOf((int)buf[1])+"=" +String.valueOf((int)buf[2]));
-                    if (mCharacteristicTx != null) {
-                        mCharacteristicTx.setValue(buf);
-                        mBluetoothLeService.writeCharacteristic(mCharacteristicTx);
-                    }
-                    i = i +1;
-
+                if(!isSpeed) {
+                    sendColor(result);
                 }
+
 
 
             }
@@ -445,7 +460,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onCheckedChanged(CompoundButton buttonView,
                                          boolean isChecked) {
-                byte buf[] = new byte[] { (byte) 0x01, (byte) 0x00, (byte) 0x00 };
+               /* byte buf[] = new byte[] { (byte) 0x01, (byte) 0x00, (byte) 0x00 };
 
                 if (isChecked == true)
                     buf[1] = 0x01;
@@ -453,7 +468,10 @@ public class MainActivity extends AppCompatActivity {
                     buf[1] = 0x00;
 
                 mCharacteristicTx.setValue(buf);
-                mBluetoothLeService.writeCharacteristic(mCharacteristicTx);
+                mBluetoothLeService.writeCharacteristic(mCharacteristicTx);*/
+
+                   setSpeed(isChecked);
+
             }
         });
 
