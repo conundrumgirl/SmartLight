@@ -181,12 +181,5 @@
             app:palette="@drawable/palette"
             app:selector="@drawable/wheel" />
 
-
-        <com.rtugeek.android.colorseekbar.ColorSeekBar
-            android:id="@+id/colorSlider"
-            android:layout_width="match_parent"
-            app:colorSeeds="@array/material_colors"
-            app:barHeight = "1dp"
-            android:layout_height="wrap_content" />
     </android.support.constraint.ConstraintLayout>
 </LinearLayout>

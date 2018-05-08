@@ -34,20 +34,16 @@ import android.widget.CompoundButton;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
-import com.rtugeek.android.colorseekbar.ColorSeekBar;
+
 
 import com.agendel.SmartLight.BLE.RBLGattAttributes;
 import com.agendel.SmartLight.BLE.RBLService;
 
 
-
-
-
-
 import com.skydoves.colorpickerpreference.ColorEnvelope;
 import com.skydoves.colorpickerpreference.ColorListener;
 import com.skydoves.colorpickerpreference.ColorPickerView;
-//import com.rtugeek.android.colorseekbar.ColorSeekBar;
+
 
 import java.util.Locale;
 import java.util.Timer;
@@ -205,12 +201,18 @@ public class MainActivity extends AppCompatActivity {
 
         color[colorIndex] = byteData;
         mAnalogInValue.setTextColor(Color.rgb(color[0], color[1], color[2]));
+        String[] rgb = {"00", "00", "00"};
+        for (int i = 0; i < 3;) {
+            rgb[i] = Integer.toHexString(color[i]);
+            if(rgb[i].length()<2) {
+            rgb[i] = "0"+rgb[i];
+            }
+            i = i + 1;
+        }
 
-        mAnalogInValue.setText("The light color: " + Integer.toHexString(color[0])+ Integer.toHexString(color[1]) + Integer.toHexString(color[2]));
-        //ColorSeekBar colorSeekBar =findViewById(R.id.colorSlider);
 
-        //int x = Color.rgb(color[0], color[1], color[2]);
-        //colorSeekBar.setColor(x);
+        mAnalogInValue.setText("The light color: " + rgb[0]+rgb[1]+rgb[2]);
+
 
         Log.e(TAG, String.valueOf((int)data[0] + " value" + String.valueOf(byteData )));
 
@@ -362,43 +364,13 @@ public class MainActivity extends AppCompatActivity {
         mDigitalOutBtn = (ToggleButton) findViewById(R.id.DOutBtn);
         mUUID = (TextView) findViewById(R.id.uuidValue);
         mAnalogInValue = (TextView) findViewById(R.id.ananlogIn);
+        mAnalogInValue.setText("The light color: Unknown");
 
         ColorPickerView colorPickerView =findViewById(R.id.colorPickerView);
-
-
-
-        /*com.rtugeek.android.colorseekbar.ColorSeekBar colorSeekBar =findViewById(R.id.colorSlider);
-        colorSeekBar.setOnColorChangeListener(new com.rtugeek.android.colorseekbar.ColorSeekBar.OnColorChangeListener() {
-            @Override
-            public void onColorChangeListener(int colorBarPosition, int alphaBarPosition, int color) {
-
-                int[] result = { Color.red(color), Color.green(color), Color.blue(color)};
-
-
-                byte buf[] = new byte[] { (byte) 0x02, (byte) 0x00, (byte) 0x00};
-                for (int i = 0; i < 3;) {
-                    Log.e(TAG, "Unable to initialize Bluetooth");
-                    buf[1]= (byte)i;
-                    buf[2] = (byte)result[i];
-                    Log.e(TAG, String.valueOf((int)buf[0]) +"=" + String.valueOf((int)buf[1])+"=" +String.valueOf((int)buf[2]));
-                    if (mCharacteristicTx != null) {
-                        mCharacteristicTx.setValue(buf);
-                        mBluetoothLeService.writeCharacteristic(mCharacteristicTx);
-                    }
-                    i = i +1;
-
-                }
-            }
-        });*/
-
-
-
 
         colorPickerView.setColorListener(new ColorListener() {
             @Override
             public void onColorSelected(ColorEnvelope colorEnvelope) {
-                int[] result2 = colorEnvelope.getColorRGB();
-
 
                 int[] result = colorEnvelope.getColorRGB();
                 byte buf[] = new byte[] { (byte) 0x02, (byte) 0x00, (byte) 0x00};
