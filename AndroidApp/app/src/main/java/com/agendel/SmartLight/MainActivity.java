@@ -1,5 +1,5 @@
-/* BLE demo: Use a single button to send data to the Duo board from the Android app to control the
- * LED on and off on the board through BLE.
+/* This is based on the code examples from the class
+ * https://github.com/jonfroehlich/CSE590Sp2018/tree/master/L06-BLE/InClassExe2-RGBLed
  *
  * The app is built based on the example code provided by the RedBear Team:
  * https://github.com/RedBearLab/Android

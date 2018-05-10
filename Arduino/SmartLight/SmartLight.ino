@@ -1,7 +1,7 @@
 #include "ble_config.h"
 
 /*
-   This is based on Simple Bluetooth Demo from Liang
+   This is based on Simple Bluetooth Demo from Liang. His comments are left in here intentionally
    I have added a 2-way communication (also per Liang's example) + lights management
 
    Created by Liang He, April 27th, 2018
